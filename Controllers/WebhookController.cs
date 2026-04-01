@@ -41,17 +41,24 @@ public class WebhookController : ControllerBase
         var owner = root.GetProperty("repository").GetProperty("owner").GetProperty("login").GetString()!;
         var repo = root.GetProperty("repository").GetProperty("name").GetString()!;
         var headSha = root.GetProperty("pull_request").GetProperty("head").GetProperty("sha").GetString()!;
+        // For forked PRs, the commit is in the head (fork) repo, not the base repo
+        var headRepoOwner = root.GetProperty("pull_request").GetProperty("head").GetProperty("repo").GetProperty("owner").GetProperty("login").GetString()!;
+        var headRepoName = root.GetProperty("pull_request").GetProperty("head").GetProperty("repo").GetProperty("name").GetString()!;
         
-        // Get user email from the PR sender (available in webhook payload)
-        string? userEmail = null;
-        if (root.GetProperty("sender").TryGetProperty("email", out var emailElement))
-        {
-            userEmail = emailElement.GetString();
-        }
-
         // Handle PR when opened or synchronized (new commit)
         if (action is "opened" or "synchronize")
         {
+            // Get user email from the commit author in the HEAD repo (fork repo for forked PRs)
+            string? userEmail = null;
+            try
+            {
+                userEmail = await _github.GetCommitAuthorEmailAsync(headRepoOwner, headRepoName, headSha);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Warning: Failed to get commit author email for {headSha}: {ex.Message}");
+            }
+            
             // First, let's check if the user is using an educational email domain.
             await AnalyzeUserAndLabelPR(owner, repo, prNumber, userEmail);
             // Then, let's anaylize the content of the PR and add labels accordingly.
