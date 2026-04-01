@@ -1,0 +1,23 @@
+**/.dockerignore
+**/.git
+**/.gitignore
+**/.vs
+**/.vscode
+**/.idea
+**/bin
+**/obj
+**/Dockerfile*
+**/docker-compose*
+**/*.md
+**/*.user
+**/*.userosscache
+**/*.sln.docstates
+**/[Tt]est[Rr]esults
+**/[Bb]uild[Ll]og.*
+**/.DS_Store
+**/Thumbs.db
+
+# Keep appsettings.demo.json but ignore the real config
+appsettings.json
+!appsettings.demo.json
+

@@ -21,6 +21,8 @@ Then edit `appsettings.json` and fill in your actual values:
 
 ### 2. Run
 
+#### Option A: Run directly
+
 ```bash
 dotnet run
 ```
@@ -29,6 +31,78 @@ Or run the published binary directly:
 
 ```bash
 ./soroban-bot
+```
+
+#### Option B: Run with Docker Compose (Recommended)
+
+1. Create your configuration file:
+   ```bash
+   cp appsettings.demo.json appsettings.json
+   # Edit appsettings.json with your GitHub App credentials
+   ```
+
+2. Start the bot:
+   ```bash
+   docker compose up -d
+   ```
+
+3. View logs:
+   ```bash
+   docker compose logs -f
+   ```
+
+4. Stop the bot:
+   ```bash
+   docker compose down
+   ```
+
+#### Option C: Run with Docker directly
+
+```bash
+# Pull the image
+docker pull ghcr.io/openruyi/soroban-bot:latest
+
+# Run with mounted config
+docker run -d \
+  --name soroban-bot \
+  -p 3456:3456 \
+  -v $(pwd)/appsettings.json:/app/appsettings.json:ro \
+  ghcr.io/openruyi/soroban-bot:latest
+```
+
+### 3. Build Docker Image Locally (Optional)
+
+If you want to build the image yourself:
+
+```bash
+docker build -t soroban-bot .
+```
+
+Or with docker compose:
+
+```bash
+docker compose build
+```
+
+## Configuration via Environment Variables
+
+You can also configure the bot using environment variables (useful for container orchestration):
+
+```yaml
+environment:
+  - GitHubApp__AppId=123456
+  - GitHubApp__InstallationId=78901234
+  - GitHubApp__PrivateKey=-----BEGIN RSA PRIVATE KEY-----\n...\n-----END RSA PRIVATE KEY-----
+```
+
+> Note: Use double underscores (`__`) to represent nested configuration keys.
+
+## Health Check
+
+The bot exposes a health check endpoint at `/health` for monitoring:
+
+```bash
+curl http://localhost:3456/health
 ```
 
 ## LICENSE

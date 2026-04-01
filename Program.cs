@@ -34,4 +34,8 @@ builder.Services.AddSingleton(new GitHubService(
 
 var app = builder.Build();
 app.MapControllers();
+
+// Health check endpoint for Docker/Kubernetes
+app.MapGet("/health", () => Results.Ok(new { status = "healthy", timestamp = DateTime.UtcNow }));
+
 app.Run();
