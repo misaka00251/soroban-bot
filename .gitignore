@@ -58,3 +58,6 @@ nunit-*.xml
 
 # Our own files
 appsettings.json
+
+# User-specific files
+.idea
