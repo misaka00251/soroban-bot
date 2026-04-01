@@ -41,27 +41,24 @@ public class WebhookController : ControllerBase
         var owner = root.GetProperty("repository").GetProperty("owner").GetProperty("login").GetString()!;
         var repo = root.GetProperty("repository").GetProperty("name").GetString()!;
         var headSha = root.GetProperty("pull_request").GetProperty("head").GetProperty("sha").GetString()!;
-        // For forked PRs, the commit is in the head (fork) repo, not the base repo
-        var headRepoOwner = root.GetProperty("pull_request").GetProperty("head").GetProperty("repo").GetProperty("owner").GetProperty("login").GetString()!;
-        var headRepoName = root.GetProperty("pull_request").GetProperty("head").GetProperty("repo").GetProperty("name").GetString()!;
         
         // Handle PR when opened or synchronized (new commit)
         if (action is "opened" or "synchronize")
         {
-            // Get user email from the commit author in the HEAD repo (fork repo for forked PRs)
+            // Get user email from PR commits (via base repo API, works for both public and private forks)
             string? userEmail = null;
             try
             {
-                userEmail = await _github.GetCommitAuthorEmailAsync(headRepoOwner, headRepoName, headSha);
+                userEmail = await _github.GetPullRequestAuthorEmailAsync(owner, repo, prNumber);
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Warning: Failed to get commit author email for {headSha}: {ex.Message}");
+                Console.WriteLine($"Warning: Failed to get commit author email for PR #{prNumber}: {ex.Message}");
             }
             
             // First, let's check if the user is using an educational email domain.
             await AnalyzeUserAndLabelPR(owner, repo, prNumber, userEmail);
-            // Then, let's anaylize the content of the PR and add labels accordingly.
+            // Then, let's analyze the content of the PR and add labels accordingly.
             await AnalyzeFilesAndLabelPR(owner, repo, prNumber, headSha);
         }
         // When PR is closed, remove/cleanup labels

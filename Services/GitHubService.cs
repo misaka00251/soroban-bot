@@ -91,11 +91,18 @@ public class GitHubService
         return await _client.PullRequest.Files(owner, repo, prNumber);
     }
 
-    public async Task<string> GetCommitAuthorEmailAsync(
-        string owner, string repo, string sha)
+    public async Task<string> GetPullRequestAuthorEmailAsync(
+        string owner, string repo, int prNumber)
     {
-        var commit = await _client.Repository.Commit.Get(owner, repo, sha);
-        return commit.Commit.Author.Email;
+        await EnsureAuthenticatedAsync();
+        // Get commits from the PR endpoint (works on the base repo, no need to access fork)
+        var commits = await _client.PullRequest.Commits(owner, repo, prNumber);
+        if (commits.Count > 0)
+        {
+            // Return the author email from the latest commit
+            return commits[^1].Commit.Author.Email;
+        }
+        return null;
     }
     
 
