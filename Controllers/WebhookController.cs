@@ -41,12 +41,19 @@ public class WebhookController : ControllerBase
         var owner = root.GetProperty("repository").GetProperty("owner").GetProperty("login").GetString()!;
         var repo = root.GetProperty("repository").GetProperty("name").GetString()!;
         var headSha = root.GetProperty("pull_request").GetProperty("head").GetProperty("sha").GetString()!;
+        
+        // Get user email from the PR sender (available in webhook payload)
+        string? userEmail = null;
+        if (root.GetProperty("sender").TryGetProperty("email", out var emailElement))
+        {
+            userEmail = emailElement.GetString();
+        }
 
         // Handle PR when opened or synchronized (new commit)
         if (action is "opened" or "synchronize")
         {
             // First, let's check if the user is using an educational email domain.
-            await AnalyzeUserAndLabelPR(owner, repo, prNumber, headSha);
+            await AnalyzeUserAndLabelPR(owner, repo, prNumber, userEmail);
             // Then, let's anaylize the content of the PR and add labels accordingly.
             await AnalyzeFilesAndLabelPR(owner, repo, prNumber, headSha);
         }
@@ -57,9 +64,8 @@ public class WebhookController : ControllerBase
         }
     }
 
-    private async Task AnalyzeUserAndLabelPR(string owner, string repo, int prNumber, string sha)
+    private async Task AnalyzeUserAndLabelPR(string owner, string repo, int prNumber, string? userEmail)
     {
-        var userEmail = await _github.GetCommitAuthorEmailAsync(owner, repo, sha);
         var domain = ExtractEmailDomain(userEmail);
         if (string.IsNullOrWhiteSpace(domain))
             return;
